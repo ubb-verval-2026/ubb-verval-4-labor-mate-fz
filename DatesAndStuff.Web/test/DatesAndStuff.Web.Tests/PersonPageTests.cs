@@ -105,23 +105,53 @@ public class PersonPageTests
     {
         // Arrange
         driver.Navigate().GoToUrl(BaseURL);
-        driver.FindElement(By.XPath("//*[@data-test='PersonPageNavigation']")).Click();
 
         var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(5));
 
-        wait.Until(ExpectedConditions.ElementToBeClickable(By.XPath("//*[@data-test='SalaryIncreasePercentageInput']")));
-        
-        driver.FindElement(By.XPath("//*[@data-test='SalaryIncreasePercentageInput']")).Clear();
-        driver.FindElement(By.XPath("//*[@data-test='SalaryIncreasePercentageInput']")).SendKeys(percentage.ToString());
+        wait.Until(ExpectedConditions.ElementToBeClickable(By.XPath("//*[@data-test='PersonPageNavigation']"))).Click();
+
+        By inputLocator = By.XPath("//*[@data-test='SalaryIncreasePercentageInput']");
+        wait.Until(ExpectedConditions.ElementIsVisible(inputLocator));
+
+        driver.FindElement(inputLocator).Clear();
+        driver.FindElement(inputLocator).SendKeys(percentage.ToString());
 
         // Act
-        wait.Until(ExpectedConditions.ElementToBeClickable(By.XPath("//*[@data-test='SalaryIncreaseSubmitButton']"))).Click();
+        By submitBtn = By.XPath("//*[@data-test='SalaryIncreaseSubmitButton']");
+        wait.Until(ExpectedConditions.ElementToBeClickable(submitBtn)).Click();
 
         // Assert
-        var salaryLabel = wait.Until(ExpectedConditions.ElementExists(By.XPath("//*[@data-test='DisplayedSalary']")));
+        By salaryLocator = By.XPath("//*[@data-test='DisplayedSalary']");
+
+        var salaryLabel = wait.Until(ExpectedConditions.ElementIsVisible(salaryLocator));
         var salaryAfterSubmission = double.Parse(salaryLabel.Text);
         salaryAfterSubmission.Should().BeApproximately(expectedSalary, 0.001);
     }
+
+    [Test]
+    public void Person_SalaryIncrease_ValueBelowMinusTen_ShouldDisplayValidationErrors()
+    {
+        // Arrange
+        driver.Navigate().GoToUrl(BaseURL);
+        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(5));
+
+        wait.Until(ExpectedConditions.ElementToBeClickable(By.XPath("//*[@data-test='PersonPageNavigation']"))).Click();
+
+        By inputLocator = By.XPath("//*[@data-test='SalaryIncreasePercentageInput']");
+        wait.Until(ExpectedConditions.ElementIsVisible(inputLocator));
+        driver.FindElement(inputLocator).Clear();
+        driver.FindElement(inputLocator).SendKeys("-15");
+
+        // Act
+        By submitButtonLocator = By.XPath("//*[@data-test='SalaryIncreaseSubmitButton']");
+        driver.FindElement(submitButtonLocator).Click();
+
+        // Assert
+        var validationMessages = wait.Until(d => d.FindElements(By.ClassName("validation-message")));
+
+        validationMessages.Count.Should().Be(2, "Error message should pop up on top and bottom.");
+    }
+
     private bool IsElementPresent(By by)
     {
         try
