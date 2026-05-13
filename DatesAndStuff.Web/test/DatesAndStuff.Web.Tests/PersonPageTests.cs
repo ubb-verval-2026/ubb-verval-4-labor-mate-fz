@@ -101,7 +101,6 @@ public class PersonPageTests
     [TestCase(10, 5500)]
     [TestCase(0, 5000)]
     [TestCase(-5, 4750)]
-    [TestCase(-10, 4500)]
     public void Person_SalaryIncrease_ShouldIncrease(double percentage, double expectedSalary)
     {
         // Arrange
@@ -124,13 +123,17 @@ public class PersonPageTests
         // Assert
         By salaryLocator = By.XPath("//*[@data-test='DisplayedSalary']");
 
+        wait.Until(d => d.FindElement(salaryLocator).Text == expectedSalary.ToString());
+
         var salaryLabel = wait.Until(ExpectedConditions.ElementIsVisible(salaryLocator));
         var salaryAfterSubmission = double.Parse(salaryLabel.Text);
         salaryAfterSubmission.Should().BeApproximately(expectedSalary, 0.001);
     }
 
-    [Test]
-    public void Person_SalaryIncrease_ValueBelowMinusTen_ShouldDisplayValidationErrors()
+    [TestCase(-10)]
+    [TestCase(-15)]
+    [TestCase(-50)]
+    public void Person_SalaryIncrease_InvalidValues_ShouldDisplayValidationErrors(double percentage)
     {
         // Arrange
         driver.Navigate().GoToUrl(BaseURL);
@@ -139,12 +142,13 @@ public class PersonPageTests
         wait.Until(ExpectedConditions.ElementToBeClickable(By.XPath("//*[@data-test='PersonPageNavigation']"))).Click();
 
         By inputLocator = By.XPath("//*[@data-test='SalaryIncreasePercentageInput']");
-        wait.Until(ExpectedConditions.ElementIsVisible(inputLocator));
-        driver.FindElement(inputLocator).Clear();
-        driver.FindElement(inputLocator).SendKeys("-15");
+        By submitButtonLocator = By.XPath("//*[@data-test='SalaryIncreaseSubmitButton']");
 
         // Act
-        By submitButtonLocator = By.XPath("//*[@data-test='SalaryIncreaseSubmitButton']");
+        wait.Until(ExpectedConditions.ElementIsVisible(inputLocator));
+        driver.FindElement(inputLocator).Clear();
+        driver.FindElement(inputLocator).SendKeys(percentage.ToString());
+
         driver.FindElement(submitButtonLocator).Click();
 
         // Assert
